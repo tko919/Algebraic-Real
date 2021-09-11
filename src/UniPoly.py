@@ -64,7 +64,7 @@ class UniPoly:
       return ret
 
    def value(self,x):
-      ret=self.id1()
+      ret=x-x
       for c in reversed(self.cs):
          ret*=x
          ret+=c
@@ -135,14 +135,14 @@ class UniPoly:
       ret=self-h*other
       return ret
 
-   def __pow__(self,t):
+   def __pow__(self,k):
       ret=UniPoly([self.id2()])
       b=copy.copy(self)
-      while t>0:
-         if t&1:
+      while k>0:
+         if k&1:
             ret*=b
          b*=b
-         t>>=1
+         k>>=1
       return ret
 
    def comp(f,g):
@@ -169,7 +169,8 @@ class UniPoly:
 
    def squarefree(self):
       g=self.diff()
-      return self/UniPoly.gcd(self,g)
+      ret=self/UniPoly.gcd(self,g)
+      return ret.to_monic()
 
 def debug(f,End='\n'):
    if isinstance(f,UniPoly):
