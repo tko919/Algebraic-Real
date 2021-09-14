@@ -1,8 +1,44 @@
-from numpy.lib.arraysetops import isin
 from src.Template import *
 
+def gcd(x,y):
+   return (x if y==0 else gcd(y,x%y))
+
+def SubresultantPRS(f,g):
+   ret=[copy.copy(f),copy.copy(g)]
+   psi=f.v(-1)
+   while True:
+      f,g=copy.copy(ret[-2]),copy.copy(ret[-1])
+      ff=f.scale(g.lc()**(f.deg()-g.deg()+1))
+      add=ff%g
+      if not add.cs:
+         break
+      c=1
+      if len(ret)==2:
+         if (f.deg()-g.deg()+1)&1:
+            c=-1
+      else:
+         c=-f.lc()*psi**(f.deg()-g.deg())
+      add=add.unscale(c)
+      ret.append(add)
+      if f.v==int:
+         psi=(-g.lc())**(f.deg()-g.deg())//(psi**(f.deg()-g.deg()-1))
+      else:
+         psi=(-g.lc())**(f.deg()-g.deg())/(psi**(f.deg()-g.deg()-1))
+   return ret
+
+def gcdP(f,g):
+   if f.deg()<g.deg():
+      f,g=g,f
+   ff=f.scale(g.lc()**(f.deg()-g.deg()+1))
+   ff%=g
+   if not ff.cs:
+      return g.to_pp()
+   else:
+      ps=SubresultantPRS(g,ff)
+      return ps[-1].to_pp()
+
 class UniPoly:
-   def __init__(self,cs,Value=Fraction) -> None:
+   def __init__(self,cs,Value=int) -> None:
       self.cs=[]
       self.v=Value
       if not isinstance(cs,list):
@@ -53,10 +89,27 @@ class UniPoly:
          ret.cs[i]*=a
       return ret
 
+   def unscale(self,a):
+      ret=copy.copy(self)
+      for i in range(len(self.cs)):
+         if ret.v==int:
+            ret.cs[i]//=a
+         else:
+            ret.cs[i]/=a
+      return ret
+
    def to_monic(self):
       if not self.cs:
          return self
-      return UniPoly.scale(self,1/self.lc())
+      return self.unscale(abs(self.lc()))
+   
+   def to_pp(self):
+      if not self.cs:
+         return self
+      g=0
+      for c in self.cs:
+         g=gcd(g,c)
+      return self.unscale(abs(g))
 
    def shift(self,a):
       ret=copy.copy(self)
@@ -90,7 +143,7 @@ class UniPoly:
             ret[i]+=self.cs[i]
          if i<len(other.cs):
             ret[i]+=other.cs[i]
-      return UniPoly(ret)
+      return UniPoly(ret,self.v)
 
    def __sub__(self,other):
       L=max(len(self.cs),len(other.cs))
@@ -100,7 +153,7 @@ class UniPoly:
             ret[i]+=self.cs[i]
          if i<len(other.cs):
             ret[i]-=other.cs[i]
-      return UniPoly(ret)
+      return UniPoly(ret,self.v)
 
    def __mul__(self,other):
       if not isinstance(other,UniPoly):
@@ -115,7 +168,7 @@ class UniPoly:
                ret[i+j]+=self.cs[i]*other.cs[j]
             else:
                ret[i+j]+=other.cs[j]*self.cs[i]
-      return UniPoly(ret)
+      return UniPoly(ret,self.v)
 
    def __truediv__(self,other):
       if not self.cs or not other.cs:
@@ -125,10 +178,13 @@ class UniPoly:
       while len(f.cs)>=len(g.cs):
          p,q=f.lc(),g.lc()
          shift=len(f.cs)-len(g.cs)
-         ret[shift]=p/q
-         sub=g.scale(p/q).shift(shift)
+         if isinstance(p,int):
+            ret[shift]=p//q
+         else:
+            ret[shift]=p/q
+         sub=g.scale(ret[shift]).shift(shift)
          f-=sub
-      return UniPoly(ret)
+      return UniPoly(ret,self.v)
 
    def __mod__(self,other):
       h=self/other
@@ -152,13 +208,6 @@ class UniPoly:
          ret+=c
       return ret
 
-   def gcd(f,g):
-      if not g.cs:
-         return f
-      else:
-         h=f%g
-         return UniPoly.gcd(g,h.to_monic())
-
    def diff(self):
       ret=copy.copy(self)
       if ret.cs:
@@ -169,8 +218,8 @@ class UniPoly:
 
    def squarefree(self):
       g=self.diff()
-      ret=self/UniPoly.gcd(self,g)
-      return ret.to_monic()
+      ret=self/gcdP(self,g)
+      return ret
 
 def debug(f,End='\n'):
    if isinstance(f,UniPoly):

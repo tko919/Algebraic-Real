@@ -2,17 +2,11 @@ from src.Template import *
 from src.UniPoly import *
 
 def StrumSeq(f):
-   pre=UniPoly(f.cs).squarefree().to_monic()
-   cur=pre.diff().to_monic()
-   ret=[pre]
-   while True:
-      if len(cur.cs)==0:
-         break
-      ret.append(cur)
-      nxt=-(pre%cur)
-      nxt=nxt.to_monic()
-      pre=UniPoly(cur.cs)
-      cur=UniPoly(nxt.cs)
+   pre=copy.copy(f).squarefree()
+   ret=SubresultantPRS(pre,pre.diff())
+   for i in range(len(ret)):
+      if (i&3)<2:
+         ret[i]=-ret[i]
    return ret
 
 def variance(seq,x):
@@ -48,7 +42,7 @@ def approximate(f,a,b,err):
    return a,b
 
 def BoundOfRoots(f):
-   mx=0
-   for c in f.cs:
-      mx=max(mx,abs(c))
-   return mx/abs(f.cs[-1])+1
+   if not f.cs:
+      return 0
+   mx=int(max(np.abs(f.cs[:-1])))
+   return Fraction(mx,abs(f.lc()))+1
