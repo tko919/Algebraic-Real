@@ -6,12 +6,10 @@ def gcd(x,y):
 def SubresultantPRS(f,g):
    ret=[copy.copy(f),copy.copy(g)]
    psi=f.v(-1)
-   while True:
+   while ret[-1].cs:
       f,g=copy.copy(ret[-2]),copy.copy(ret[-1])
       ff=f.scale(g.lc()**(f.deg()-g.deg()+1))
       add=ff%g
-      if not add.cs:
-         break
       c=1
       if len(ret)==2:
          if (f.deg()-g.deg()+1)&1:
@@ -24,11 +22,14 @@ def SubresultantPRS(f,g):
          psi=(-g.lc())**(f.deg()-g.deg())//(psi**(f.deg()-g.deg()-1))
       else:
          psi=(-g.lc())**(f.deg()-g.deg())/(psi**(f.deg()-g.deg()-1))
+   ret.pop(-1)
    return ret
 
 def gcdP(f,g):
    if f.deg()<g.deg():
       f,g=g,f
+   if not g.cs:
+      return f
    ff=f.scale(g.lc()**(f.deg()-g.deg()+1))
    ff%=g
    if not ff.cs:

@@ -132,7 +132,11 @@ class AlgReal:
 
    def __add__(self,other):
       ret=copy.copy(self)
-      if isinstance(other,Fraction):
+      if isinstance(other,int):
+         ret.f=UniPoly.comp(ret.f,UniPoly([-other,1]))
+         ret.a+=other
+         ret.b+=other
+      elif isinstance(other,Fraction):
          ret.f=UniPoly.comp(ret.f,UniPoly([-other.numerator,other.denominator]))
          ret.a+=other
          ret.b+=other
@@ -171,9 +175,16 @@ class AlgReal:
 
    def __mul__(self,other):
       ret=copy.copy(self)
-      if isinstance(other,Fraction):
+      if isinstance(other,int):
          for i in range(ret.f.deg()+1):
-            ret.f.cs[i]*=other.numerator**i*other.denominator**(ret.f.deg()-i)
+            ret.f.cs[i]*=other**(ret.f.deg()-i)
+         ret.a*=other
+         ret.b*=other
+         if other<0:
+            ret.a,ret.b=ret.b,ret.a
+      elif isinstance(other,Fraction):
+         for i in range(ret.f.deg()+1):
+            ret.f.cs[i]*=other.denominator**i*other.numerator**(ret.f.deg()-i)
          ret.a*=other
          ret.b*=other
          if other<0:
