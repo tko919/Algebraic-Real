@@ -1,6 +1,3 @@
-import decimal
-from os import O_EXCL
-from numpy.lib.arraysetops import isin
 from src.Template import *
 from src.StrumSeq import *
 
@@ -37,7 +34,7 @@ def Resultant(f:UniPoly,g:UniPoly):
       return ret
 
 class AlgReal:
-   def __init__(self,f=UniPoly([-1,1]),a=Fraction(1,2),b=Fraction(3,2),x=Inf) -> None:
+   def __init__(self,f,a,b,x) -> None:
       self.f=f
       self.a=a
       self.b=b

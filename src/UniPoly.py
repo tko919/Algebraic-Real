@@ -1,4 +1,5 @@
 from src.Template import *
+from src.GaloisField import *
 
 def gcd(x,y):
    return (x if y==0 else gcd(y,x%y))
@@ -48,8 +49,8 @@ class UniPoly:
          if isinstance(c,list):
             c=UniPoly(c)
          if isinstance(c,UniPoly):
-            self.cs.append(c)
             self.v=UniPoly
+            self.cs.append(c)
          else:
             self.cs.append(Value(c))
       while self.cs and self.lc()==self.id1():
@@ -108,9 +109,13 @@ class UniPoly:
       if not self.cs:
          return self
       g=0
-      for c in self.cs:
-         g=gcd(g,c)
-      return self.unscale(abs(g))
+      if self.v==int:
+         for c in self.cs:
+            g=gcd(g,c)
+         return self.unscale(abs(g))
+      else:
+         g=self.lc()
+         return self.unscale(g)
 
    def shift(self,a):
       ret=copy.copy(self)
@@ -160,12 +165,12 @@ class UniPoly:
       if not isinstance(other,UniPoly):
          return self.scale(other)
       if not self.cs or not other.cs:
-         return UniPoly([])
+         return UniPoly([],self.v)
       L=len(self.cs)+len(other.cs)-1
       ret=[other.id1()]*L
       for i in range(len(self.cs)):
          for j in range(len(other.cs)):
-            if isinstance(self.cs[i],UniPoly):
+            if self.v==UniPoly:
                ret[i+j]+=self.cs[i]*other.cs[j]
             else:
                ret[i+j]+=other.cs[j]*self.cs[i]
@@ -173,7 +178,7 @@ class UniPoly:
 
    def __truediv__(self,other):
       if not self.cs or not other.cs:
-         return UniPoly([])
+         return UniPoly([],self.v)
       ret=[self.id1()]*(len(self.cs)-len(other.cs)+1)
       f,g=copy.copy(self),copy.copy(other)
       while len(f.cs)>=len(g.cs):
@@ -193,7 +198,7 @@ class UniPoly:
       return ret
 
    def __pow__(self,k):
-      ret=UniPoly([self.id2()])
+      ret=UniPoly([self.id2()],self.v)
       b=copy.copy(self)
       while k>0:
          if k&1:
@@ -202,8 +207,20 @@ class UniPoly:
          k>>=1
       return ret
 
+   def powmod(self,k,f):
+      ret=UniPoly([self.id2()],self.v)
+      b=copy.copy(self)
+      while k>0:
+         if k&1:
+            ret*=b
+            ret%=f
+         b*=b
+         b%=f
+         k>>=1
+      return ret
+
    def comp(f,g):
-      ret=UniPoly([f.id1()])
+      ret=UniPoly([f.id1()],f.v)
       for c in reversed(f.cs):
          ret*=g
          ret+=c
@@ -215,6 +232,8 @@ class UniPoly:
          ret.cs.pop(0)
       for i in range(len(ret.cs)):
          ret.cs[i]*=(i+1)
+      while ret.cs and ret.lc()==ret.id1():
+         ret.cs.pop(-1)
       return ret
 
    def squarefree(self):
@@ -234,4 +253,7 @@ def debug(f,End='\n'):
          debug(f[i],(',' if i!=len(f)-1 else ''))
       print(end=']'+End)
    else:
-      print(f,end=End)
+      if isinstance(f,GF):
+         print(f.val,end=End)
+      else:
+         print(f,end=End)
