@@ -1,4 +1,4 @@
 import numpy as np
 from numpy.core.numeric import Inf
 from fractions import Fraction
-import copy,sys,random
+import copy,sys,random,itertools

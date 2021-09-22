@@ -59,16 +59,22 @@ class UniPoly:
    def __copy__(self):
       return UniPoly(self.cs,self.v)
 
+   def __getitem__(self,k):
+      return self.cs[k]
+
+   def __setitem__(self,k,v):
+      self.cs[k]=v
+
    def __eq__(self,other):
       if not isinstance(other,UniPoly) or self.deg()!=other.deg():
          return False
       for i in range(self.deg()+1):
-         if self.cs[i]!=other.cs[i]:
+         if self[i]!=other[i]:
             return False
       return True
 
    def lc(self):
-      return self.cs[-1]
+      return self[-1]
 
    def id1(self):
       if self.v==UniPoly:
@@ -88,16 +94,16 @@ class UniPoly:
    def scale(self,a):
       ret=copy.copy(self)
       for i in range(len(self.cs)):
-         ret.cs[i]*=a
+         ret[i]*=a
       return ret
 
    def unscale(self,a):
       ret=copy.copy(self)
       for i in range(len(self.cs)):
          if ret.v==int:
-            ret.cs[i]//=a
+            ret[i]//=a
          else:
-            ret.cs[i]/=a
+            ret[i]/=a
       return ret
 
    def to_monic(self):
@@ -132,7 +138,7 @@ class UniPoly:
    def __neg__(self):
       ret=copy.copy(self)
       for i in range(len(self.cs)):
-         ret.cs[i]=-ret.cs[i]
+         ret[i]=-ret[i]
       return ret
 
    def __add__(self,other):
@@ -140,15 +146,15 @@ class UniPoly:
          ret=copy.copy(self)
          if not ret.cs:
             ret.cs.append(self.v(0))
-         ret.cs[0]+=other
+         ret[0]+=other
          return ret
       L=max(len(self.cs),len(other.cs))
       ret=[self.id1()]*L
       for i in range(L):
          if i<len(self.cs):
-            ret[i]+=self.cs[i]
+            ret[i]+=self[i]
          if i<len(other.cs):
-            ret[i]+=other.cs[i]
+            ret[i]+=other[i]
       return UniPoly(ret,self.v)
 
    def __sub__(self,other):
@@ -156,9 +162,9 @@ class UniPoly:
       ret=[self.id1()]*L
       for i in range(L):
          if i<len(self.cs):
-            ret[i]+=self.cs[i]
+            ret[i]+=self[i]
          if i<len(other.cs):
-            ret[i]-=other.cs[i]
+            ret[i]-=other[i]
       return UniPoly(ret,self.v)
 
    def __mul__(self,other):
@@ -167,13 +173,19 @@ class UniPoly:
       if not self.cs or not other.cs:
          return UniPoly([],self.v)
       L=len(self.cs)+len(other.cs)-1
-      ret=[other.id1()]*L
-      for i in range(len(self.cs)):
-         for j in range(len(other.cs)):
-            if self.v==UniPoly:
-               ret[i+j]+=self.cs[i]*other.cs[j]
-            else:
-               ret[i+j]+=other.cs[j]*self.cs[i]
+      if self.v==UniPoly or other.v==UniPoly:
+         ret=[UniPoly([])]*L
+         for i in range(self.deg()+1):
+            for j in range(other.deg()+1):
+               if self.v==UniPoly:
+                  ret[i+j]+=self[i]*other[j]
+               else:
+                  ret[i+j]+=other[j]*self[i]
+         return UniPoly(ret,UniPoly)
+      ret=[self.id1()]*L
+      for i in range(self.deg()+1):
+         for j in range(other.deg()+1):
+            ret[i+j]+=self[i]*other[j]
       return UniPoly(ret,self.v)
 
    def __truediv__(self,other):
@@ -188,6 +200,8 @@ class UniPoly:
             ret[shift]=p//q
          else:
             ret[shift]=p/q
+         if ret[shift]==self.id1():
+            break
          sub=g.scale(ret[shift]).shift(shift)
          f-=sub
       return UniPoly(ret,self.v)
@@ -231,7 +245,7 @@ class UniPoly:
       if ret.cs:
          ret.cs.pop(0)
       for i in range(len(ret.cs)):
-         ret.cs[i]*=(i+1)
+         ret[i]*=(i+1)
       while ret.cs and ret.lc()==ret.id1():
          ret.cs.pop(-1)
       return ret
@@ -245,7 +259,7 @@ def debug(f,End='\n'):
    if isinstance(f,UniPoly):
       print('[',end='')
       for i in range(len(f.cs)):
-         debug(f.cs[i],(',' if i!=len(f.cs)-1 else ''))
+         debug(f[i],(',' if i!=len(f.cs)-1 else ''))
       print(end=']'+End)
    elif isinstance(f,list):
       print('[',end='')

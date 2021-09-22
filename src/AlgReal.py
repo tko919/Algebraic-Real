@@ -1,40 +1,43 @@
+from itertools import permutations
 from src.Template import *
 from src.StrumSeq import *
+from src.Factorize import *
 
-def Resultant(f:UniPoly,g:UniPoly):
-   if not g.cs:
-      return f.id1()
-   if f.deg()<g.deg():
-      ret=Resultant(g,f)
-      if (f.deg()*g.deg())&1:
-         ret=-ret
-      return ret
-   k=0
-   if not isinstance(g.lc(),Fraction):
-      k=f.deg()-g.deg()+1
-      f=f.scale(g.lc()**k)
-   r=f%g
-   if not r.cs:
-      if g.deg()==0:
-         return g.cs[-1]**f.deg()
-      else:
-         return f.id1()
-   else:
-      ret=Resultant(g,r)
-      j=f.deg()-r.deg()-g.deg()*k
-      if j>=0:
-         ret*=g.lc()**j
-      else:
-         if isinstance(g.lc(),int):
-            ret//=g.lc()**(-j)
-         else:
-            ret/=g.lc()**(-j)
-      if (f.deg()*g.deg())&1:
-         ret=-ret
-      return ret
+def Resultant(f,g):
+   n,m=f.deg(),g.deg()
+   L=n+m
+   Syl=[[f.id1()]*L for i in range(L)]
+   for i in range(m):
+      for j in range(n+1):
+         Syl[i][i+j]=copy.copy(f[j])
+   for i in range(n):
+      for j in range(m+1):
+         Syl[i+m][i+j]=copy.copy(g[j])
+
+   dp=[[f.id1()]*L for i in range(L)]   
+   ret=f.id1()
+   for i in range(L):
+      dp[i][i]=f.id2()
+   for Len in range(1,L+1):
+      nxt=[[f.id1()]*L for i in range(L)]
+      for h in range(L):
+         for c in range(h,L):
+            if dp[h][c]==f.id1():
+               continue
+            for to in range(h+1,L):
+               nxt[h][to]+=dp[h][c]*-Syl[c][to]
+            if Syl[c][h]==f.id1():
+               continue
+            add=dp[h][c]*Syl[c][h]
+            if Len==L:
+               ret+=add
+            for to in range(h+1,L):
+               nxt[to][to]+=add
+      dp=nxt
+   return ret
 
 class AlgReal:
-   def __init__(self,f,a,b,x) -> None:
+   def __init__(self,f=UniPoly([]),a=-1,b=1,x=0) -> None:
       self.f=f
       self.a=a
       self.b=b
@@ -45,7 +48,7 @@ class AlgReal:
          self.f=UniPoly([])
          self.x=0
          return
-      while self.f.cs and self.f.cs[0]==0:
+      while self.f.cs and self.f[0]==0:
          self.f.cs.pop(0)
       while True:
          if 0<self.a or self.b<0:
@@ -122,7 +125,7 @@ class AlgReal:
       if ret.f:
          for i in range(len(ret.f.cs)):
             if i&1:
-               ret.f.cs[i]=-ret.f.cs[i]
+               ret.f[i]=-ret.f[i]
          ret.a,ret.b=-ret.b,-ret.a
       ret.x=-ret.x
       return ret
@@ -148,12 +151,11 @@ class AlgReal:
          g=UniPoly.comp(other.f,UniPoly([[],[1]]))
          ret.f=Resultant(f,g).squarefree()
          n=ret.f.deg()
-         D=abs(Fraction(Resultant(ret.f,ret.f.diff()),ret.f.lc()))
-         m2=D/(abs(ret.f.lc())**(n-1)*(BoundOfRoots(ret.f)*2)**(n*(n-1)//2-1))
+         seq=StrumSeq(ret.f)
          a,b,c,d=self.a,self.b,other.a,other.b
          while True:
             ret.a,ret.b=a+c,b+d
-            if (ret.b-ret.a)**2<m2:
+            if CountRealroots(ret.f,ret.a,ret.b,seq)==1:
                break
             mid=(a+b)/2
             if self.f.value(a)*self.f.value(mid)<=0:
@@ -164,7 +166,14 @@ class AlgReal:
             if other.f.value(c)*other.f.value(mid)<=0:
                d=mid
             else:
-               c=mid    
+               c=mid
+         for g in Factorize(ret.f):
+            if g.value(ret.a)*g.value(ret.b)<=0:
+               ret.f=g
+               break
+         if ret.f.deg()==1:
+            ret.x=Fraction(-ret.f[0],ret.f[1])
+            ret.f.cs=[]
       return ret
 
    def __sub__(self,other):
@@ -174,14 +183,14 @@ class AlgReal:
       ret=copy.copy(self)
       if isinstance(other,int):
          for i in range(ret.f.deg()+1):
-            ret.f.cs[i]*=other**(ret.f.deg()-i)
+            ret.f[i]*=other**(ret.f.deg()-i)
          ret.a*=other
          ret.b*=other
          if other<0:
             ret.a,ret.b=ret.b,ret.a
       elif isinstance(other,Fraction):
          for i in range(ret.f.deg()+1):
-            ret.f.cs[i]*=other.denominator**i*other.numerator**(ret.f.deg()-i)
+            ret.f[i]*=other.denominator**i*other.numerator**(ret.f.deg()-i)
          ret.a*=other
          ret.b*=other
          if other<0:
@@ -196,18 +205,17 @@ class AlgReal:
          base=[]
          n=self.f.deg()
          for i in range(n+1):
-            add=UniPoly([self.f.cs[n-i]])
+            add=UniPoly([self.f[n-i]])
             base.append(add.shift(n-i))
          f=UniPoly(base)
          g=UniPoly.comp(other.f,UniPoly([[],[1]]))
          ret.f=Resultant(f,g).squarefree()
          n=ret.f.deg()
-         D=abs(Fraction(Resultant(ret.f,ret.f.diff()),ret.f.lc()))
-         m2=D/(abs(ret.f.lc())**(n-1)*(BoundOfRoots(ret.f)*2)**(n*(n-1)//2-1))
+         seq=StrumSeq(ret.f)
          a,b,c,d=self.a,self.b,other.a,other.b
          while True:
             ret.a,ret.b=min(a*c,a*d,b*c,b*d),max(a*c,a*d,b*c,b*d)
-            if (ret.b-ret.a)**2<m2:
+            if CountRealroots(ret.f,ret.a,ret.b,seq)==1:
                break
             mid=(a+b)/2
             if self.f.value(a)*self.f.value(mid)<=0:
@@ -219,6 +227,13 @@ class AlgReal:
                d=mid
             else:
                c=mid
+         for g in Factorize(ret.f):
+            if g.value(ret.a)*g.value(ret.b)<=0:
+               ret.f=g
+               break
+         if ret.f.deg()==1:
+            ret.x=Fraction(-ret.f[0],ret.f[1])
+            ret.f.cs=[]
       return ret
 
    def __truediv__(self,other):
@@ -249,7 +264,7 @@ class AlgReal:
       ret=copy.copy(self)
       if not self.f.cs:
          ret.f=UniPoly([1]).shift(k)
-         ret.f.cs[0]-=ret.x
+         ret.f[0]-=ret.x
          if ret.x<0:
             ret.a=min(ret.x,-1)
             ret.b=0
@@ -264,6 +279,13 @@ class AlgReal:
                ret.a=x.a
                ret.b=x.b
                break
+         for g in Factorize(ret.f):
+            if g.value(ret.a)-g.value(ret.b)<=0:
+               ret.f=g
+               break
+         if ret.f.deg()==1:
+            ret.x=Fraction(-ret.f[0],ret.f[1])
+            ret.f.cs=[]
       return ret
 
 

@@ -8,6 +8,8 @@ class GF:
          self.val=x.val
       else:
          self.val=x%GF.p
+      if self.val<0:
+         self.val+=GF.p
 
    def set_order(q):
       GF.p=q
