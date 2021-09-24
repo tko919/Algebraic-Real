@@ -150,7 +150,6 @@ class AlgReal:
          f=UniPoly.comp(self.f,UniPoly([[0,1],[-1]]))
          g=UniPoly.comp(other.f,UniPoly([[],[1]]))
          ret.f=Resultant(f,g).squarefree()
-         n=ret.f.deg()
          seq=StrumSeq(ret.f)
          a,b,c,d=self.a,self.b,other.a,other.b
          while True:
@@ -210,7 +209,6 @@ class AlgReal:
          f=UniPoly(base)
          g=UniPoly.comp(other.f,UniPoly([[],[1]]))
          ret.f=Resultant(f,g).squarefree()
-         n=ret.f.deg()
          seq=StrumSeq(ret.f)
          a,b,c,d=self.a,self.b,other.a,other.b
          while True:
@@ -304,7 +302,5 @@ def EnumRoots(f,a=-Inf,b=Inf,seq=[]):
       return [AlgReal(f,a,b)]
    else:
       mid=(a+b)/2
-      ret=EnumRoots(f,a,mid,seq)
-      for x in EnumRoots(f,mid,b,seq):
-         ret.append(x)
+      ret=EnumRoots(f,a,mid,seq)+EnumRoots(f,mid,b,seq)
       return ret

@@ -109,13 +109,16 @@ class UniPoly:
    def to_monic(self):
       if not self.cs:
          return self
-      return self.unscale(abs(self.lc()))
+      if self.v==int:
+         return self.unscale(abs(self.lc()))
+      else:
+         return self.unscale(self.lc())
    
    def to_pp(self):
       if not self.cs:
          return self
-      g=0
       if self.v==int:
+         g=0
          for c in self.cs:
             g=gcd(g,c)
          return self.unscale(abs(g))
@@ -126,6 +129,11 @@ class UniPoly:
    def shift(self,a):
       ret=copy.copy(self)
       ret.cs[0:0]=[ret.id1()]*a
+      return ret
+
+   def slice(self,a):
+      ret=copy.copy(self)
+      ret.cs=ret.cs[:a]
       return ret
 
    def value(self,x):
@@ -158,14 +166,7 @@ class UniPoly:
       return UniPoly(ret,self.v)
 
    def __sub__(self,other):
-      L=max(len(self.cs),len(other.cs))
-      ret=[self.id1()]*L
-      for i in range(L):
-         if i<len(self.cs):
-            ret[i]+=self[i]
-         if i<len(other.cs):
-            ret[i]-=other[i]
-      return UniPoly(ret,self.v)
+      return self+(-other)
 
    def __mul__(self,other):
       if not isinstance(other,UniPoly):

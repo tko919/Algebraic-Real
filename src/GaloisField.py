@@ -5,7 +5,7 @@ class GF:
    val=0
    def __init__(self,x):
       if isinstance(x,GF):
-         self.val=x.val
+         self.val=x.val%GF.p
       else:
          self.val=x%GF.p
       if self.val<0:
