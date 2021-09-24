@@ -50,13 +50,12 @@ def FactorCoefficientBound(f):
    n=f.deg()
    return 2**n*int(np.sqrt(n+1)+1)*int(np.max(f.cs))
 
-def IsPrime(p):
-   for d in range(2,round(p**.5)+1):
-      if p%d==0:
-         return False
-   return True
-
 def EnumPrime():
+   def IsPrime(p):
+      for d in range(2,round(p**.5)+1):
+         if p%d==0:
+            return False
+      return True
    p=1
    while True:
       p+=2
@@ -64,12 +63,12 @@ def EnumPrime():
          yield p
 
 def HenselLifting(f,gs,B,p):
-   def extgcd(a,b):
-      s,xs,ys,t,xt,yt=a,UniPoly([1],GF),UniPoly([0],GF),b,UniPoly([0],GF),UniPoly([1],GF)
-      while t.deg()>0:
+   def extgcd(a,b,zero,one):
+      s,xs,ys,t,xt,yt=a,one,zero,b,zero,one
+      while t!=zero:
          q=s/t
          s,xs,ys,t,xt,yt=t,xt,yt,s-q*t,xs-q*xt,ys-q*yt
-      return xt/t,yt/t
+      return xs/s,ys/s
    GF.set_order(p)
    mid=len(gs)//2
    g,h=UniPoly([1],GF),UniPoly([1],GF)
@@ -79,7 +78,7 @@ def HenselLifting(f,gs,B,p):
       else:
          h*=gs[i]
    g=g.scale(f.lc())
-   s,t=extgcd(g,h)
+   s,t=extgcd(g,h,UniPoly([0],GF),UniPoly([1],GF))
    pl=p
    while True:
       if pl>=B*2+1:
@@ -99,9 +98,7 @@ def HenselLifting(f,gs,B,p):
       s-=d
       t=(t-t*b-g*c).slice(k+1)
    if len(gs)==1:
-      return [h.scale(g.lc())]
-   elif len(gs)==2:
-      return [g,h]
+      return [h]
    else:
       return HenselLifting(g,gs[:mid],B,p)+HenselLifting(h,gs[mid:],B,p)
 
