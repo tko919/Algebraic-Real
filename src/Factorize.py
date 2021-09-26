@@ -1,6 +1,60 @@
 from src.Template import *
 from src.UniPoly import *
-from src.GaloisField import *
+
+class GF:
+   p,val=3,0
+   def __init__(self,x):
+      if isinstance(x,GF):
+         self.val=x.val%GF.p
+      else:
+         self.val=x%GF.p
+      if self.val<0:
+         self.val+=GF.p
+
+   def set_order(q):
+      GF.p=q
+   
+   def __str__(self):
+      return str(self.val)
+
+   def __repr__(self):
+      return str(self)
+   
+   def __eq__(self,other):
+      if isinstance(other,GF):
+         return self.val==other.val
+      else:
+         return self.val==other
+
+   def __neg__(self):
+      return GF(GF.p-self.val)
+
+   def __add__(self,other):
+      if isinstance(other,GF):
+         return GF(self.val+other.val)
+      else:
+         return GF(self.val+other)
+
+   def __sub__(self,other):
+      if isinstance(other,GF):
+         return GF(self.val-other.val+GF.p)
+      else:
+         return GF(self.val+other+GF.p)
+   
+   def __mul__(self,other):
+      if isinstance(other,GF):
+         return GF(self.val*other.val)
+      else:
+         return GF(self.val*other)
+
+   def __truediv__(self,other):
+      if isinstance(other,GF):
+         return GF(self.val*pow(other.val,GF.p-2,GF.p))
+      else:
+         return GF(self.val*pow(other,GF.p-2,GF.p))
+
+   def __pow__(self,k):
+      return GF(pow(self.val,k,GF.p))
 
 def CantorZassenhaus(f):
    #EDF
@@ -27,7 +81,6 @@ def CantorZassenhaus(f):
             return ret
          else:
             return EDF(g,d)
-
    # DDF
    base=UniPoly([0,1],f.v)
    cur=copy.copy(f)
@@ -117,7 +170,8 @@ def Factorize(f):
       f_=f_.to_monic()
       if gcdP(f_,f_.diff()).deg()<=0:
          break
-   sub=HenselLifting(f,CantorZassenhaus(f_),B,GF.p)
+   base=CantorZassenhaus(f_)
+   sub=HenselLifting(f,base,B,GF.p)
    k=1
    ret=[]
    T={i for i in range(0,len(sub))}
@@ -126,6 +180,7 @@ def Factorize(f):
          if f.deg()>0:
             ret.append(f)
          break
+      find=False
       for S in itertools.combinations(T,k):
          g_,h_=UniPoly([f.lc()],GF),UniPoly([f.lc()],GF)
          for i in T:
@@ -148,8 +203,12 @@ def Factorize(f):
                h.cs.append(c.val-GF.p)
             hsum+=abs(h.lc())
          if gsum*hsum<B:
-            ret.append(g.to_pp())
+            if g.deg()>0:
+               ret.append(g.to_pp())
             f=h.to_pp()
             T-=set(S)
-      k+=1
+            find=True
+            break
+      if not find:
+         k+=1
    return ret

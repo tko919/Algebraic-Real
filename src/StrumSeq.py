@@ -39,10 +39,4 @@ def approximate(f,a,b,err):
          b=mid
       else:
          a=mid
-   return a,b
-
-def BoundOfRoots(f):
-   if not f.cs:
-      return 0
-   mx=int(max(np.abs(f.cs[:-1])))
-   return Fraction(mx,abs(f.lc()))+1
+   return a

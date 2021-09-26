@@ -1,5 +1,4 @@
 from src.Template import *
-from src.GaloisField import *
 
 def gcd(x,y):
    return (x if y==0 else gcd(y,x%y))
@@ -58,6 +57,18 @@ class UniPoly:
        
    def __copy__(self):
       return UniPoly(self.cs,self.v)
+   
+   def __str__(self):
+      ret='['
+      for i in range(self.deg()+1):
+         if i:
+            ret+=','
+         ret+=str(self.cs[i])
+      ret+=']'
+      return ret
+
+   def __repr__(self):
+      return str(self)
 
    def __getitem__(self,k):
       return self.cs[k]
@@ -93,13 +104,13 @@ class UniPoly:
 
    def scale(self,a):
       ret=copy.copy(self)
-      for i in range(len(self.cs)):
+      for i in range(self.deg()+1):
          ret[i]*=a
       return ret
 
    def unscale(self,a):
       ret=copy.copy(self)
-      for i in range(len(self.cs)):
+      for i in range(self.deg()+1):
          if ret.v==int:
             ret[i]//=a
          else:
@@ -137,7 +148,7 @@ class UniPoly:
       return ret
 
    def value(self,x):
-      ret=x-x
+      ret=self.id1()
       for c in reversed(self.cs):
          ret*=x
          ret+=c
@@ -145,7 +156,7 @@ class UniPoly:
 
    def __neg__(self):
       ret=copy.copy(self)
-      for i in range(len(self.cs)):
+      for i in range(self.deg()+1):
          ret[i]=-ret[i]
       return ret
 
@@ -156,12 +167,14 @@ class UniPoly:
             ret.cs.append(self.v(0))
          ret[0]+=other
          return ret
-      L=max(len(self.cs),len(other.cs))
+      L=max(self.deg()+1,other.deg()+1)
       ret=[self.id1()]*L
+      if other.v==UniPoly:
+         ret=[UniPoly([])]*L
       for i in range(L):
-         if i<len(self.cs):
+         if i<=self.deg():
             ret[i]+=self[i]
-         if i<len(other.cs):
+         if i<=other.deg():
             ret[i]+=other[i]
       return UniPoly(ret,self.v)
 
@@ -173,7 +186,7 @@ class UniPoly:
          return self.scale(other)
       if not self.cs or not other.cs:
          return UniPoly([],self.v)
-      L=len(self.cs)+len(other.cs)-1
+      L=self.deg()+other.deg()+1
       if self.v==UniPoly or other.v==UniPoly:
          ret=[UniPoly([])]*L
          for i in range(self.deg()+1):
@@ -192,11 +205,13 @@ class UniPoly:
    def __truediv__(self,other):
       if not self.cs or not other.cs:
          return UniPoly([],self.v)
-      ret=[self.id1()]*(len(self.cs)-len(other.cs)+1)
       f,g=copy.copy(self),copy.copy(other)
-      while len(f.cs)>=len(g.cs):
+      ret=[self.id1()]*(f.deg()-g.deg()+1)
+      if other.v==UniPoly:
+         ret=[UniPoly([])]*(f.deg()-g.deg()+1)
+      while f.deg()>=g.deg():
          p,q=f.lc(),g.lc()
-         shift=len(f.cs)-len(g.cs)
+         shift=f.deg()-g.deg()
          if isinstance(p,int):
             ret[shift]=p//q
          else:
@@ -245,7 +260,7 @@ class UniPoly:
       ret=copy.copy(self)
       if ret.cs:
          ret.cs.pop(0)
-      for i in range(len(ret.cs)):
+      for i in range(ret.deg()+1):
          ret[i]*=(i+1)
       while ret.cs and ret.lc()==ret.id1():
          ret.cs.pop(-1)
@@ -255,20 +270,3 @@ class UniPoly:
       g=self.diff()
       ret=self/gcdP(self,g)
       return ret
-
-def debug(f,End='\n'):
-   if isinstance(f,UniPoly):
-      print('[',end='')
-      for i in range(len(f.cs)):
-         debug(f[i],(',' if i!=len(f.cs)-1 else ''))
-      print(end=']'+End)
-   elif isinstance(f,list):
-      print('[',end='')
-      for i in range(len(f)):
-         debug(f[i],(',' if i!=len(f)-1 else ''))
-      print(end=']'+End)
-   else:
-      if isinstance(f,GF):
-         print(f.val,end=End)
-      else:
-         print(f,end=End)
